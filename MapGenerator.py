@@ -46,9 +46,13 @@ fig.update_layout(
             opacity=0,
             line=dict(color="black", width=1),
         )
-    ],
-    dragmode=False,  # Disable drag mode
+    ]
 )
 
 # Show the figure
 fig.show()
+
+import plotly.io as pio
+
+# Save as a static image (after the figure is created)
+pio.write_image(fig, "static_map.png")
