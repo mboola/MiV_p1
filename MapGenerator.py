@@ -4,14 +4,55 @@ from shapely import wkt
 import plotly.graph_objects as go
 
 # Load the CSV file
-file_path = "comarques_catalunya.csv"  # Replace with your actual file path
-data = pd.read_csv(file_path)
+comarques = pd.read_csv("comarques_catalunya.csv")
+municipis = pd.read_csv("municipis_catalunya.csv")
 
 # Convert the 'Georeferència' column (which is WKT) to actual geometries
-data['geometry'] = data['Georeferència'].apply(wkt.loads)
+comarques['geometry'] = comarques['Georeferència'].apply(wkt.loads)
 
-# Convert to a GeoDataFrame
-gdf = gpd.GeoDataFrame(data, geometry='geometry')
+# Read the additional CSV file that contains 'municipi' and 'total'
+municipis_habitants = pd.read_csv("habitants_municipis.csv")
+
+municipis_habitants_2020 = municipis_habitants[municipis_habitants['Any'] == 2020].copy()
+
+municipis_habitants_2020['Total 0-4'] = pd.to_numeric(municipis_habitants_2020['Total 0-4'], errors='coerce')
+municipis_habitants_2020['Total 15-64'] = pd.to_numeric(municipis_habitants_2020['Total 15-64'], errors='coerce')
+municipis_habitants_2020['Total 65+'] = pd.to_numeric(municipis_habitants_2020['Total 65+'], errors='coerce')
+
+# Create the 'total' column by summing the specified fields
+municipis_habitants_2020.loc[:, 'Total'] = (
+    municipis_habitants_2020['Total 0-4'] +
+    municipis_habitants_2020['Total 15-64'] +
+    municipis_habitants_2020['Total 65+']
+)
+
+comarques['Total'] = 0
+
+# Iterate through municipis_habitants_2020 to update comarques
+for index, row in municipis_habitants_2020.iterrows():
+    municipi = row['Municipi']              # Get municipi
+    total_habitants_municipi = row['Total'] # Get total
+
+    # Find the row in municipis with NOMMUNI = municipi
+    municipi_row = municipis[municipis['NOMMUNI'] == municipi]
+    
+    if not municipi_row.empty:
+        comarca = municipi_row['NOMCOMAR'].values[0]  # Get the value of NOMCOMAR
+
+        # Find the row in comarques where NOMCOMAR matches
+        comarca_row = comarques[comarques['NOMCOMAR'] == comarca]
+        
+        if not comarca_row.empty:
+            # Update the 'Total' field in comarques
+            comarques.loc[comarques['NOMCOMAR'] == comarca, 'Total'] += total_habitants_municipi
+
+# Print the updated comarques DataFrame
+print(comarques)
+
+
+
+# Convert merged DataFrame to GeoDataFrame
+gdf = gpd.GeoDataFrame(comarques, geometry='geometry')
 
 # Convert GeoDataFrame to GeoJSON format
 geojson_data = gdf.__geo_interface__
@@ -23,7 +64,7 @@ fig = go.Figure()
 fig.add_trace(go.Choroplethmapbox(
     geojson=geojson_data,
     locations=gdf.index,
-    z=[1]*len(gdf),  # Dummy variable for coloring (1 for all)
+    z=gdf['Total'], #[1]*len(gdf),
     colorscale="Viridis",  # You can choose other color scales
     marker_line_width=1,  # Width of the borders
     marker_line_color='black',  # Color of the borders
@@ -51,8 +92,3 @@ fig.update_layout(
 
 # Show the figure
 fig.show()
-
-import plotly.io as pio
-
-# Save as a static image (after the figure is created)
-pio.write_image(fig, "static_map.png")
