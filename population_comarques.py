@@ -1,6 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 from shapely import wkt
+import re
 import plotly.graph_objects as go
 
 # Load the CSV file
@@ -13,28 +14,51 @@ comarques['geometry'] = comarques['Georeferència'].apply(wkt.loads)
 # Read the additional CSV file that contains 'municipi' and 'total'
 municipis_habitants = pd.read_csv("habitants_municipis.csv")
 
-municipis_habitants_2020 = municipis_habitants[municipis_habitants['Any'] == 2020].copy()
+municipis_habitants_2020 = municipis_habitants[municipis_habitants['Any'] == 2020]
 
-municipis_habitants_2020['Total 0-14'] = pd.to_numeric(municipis_habitants_2020['Total 0-14'], errors='coerce')
-municipis_habitants_2020['Total 15-64'] = pd.to_numeric(municipis_habitants_2020['Total 15-64'], errors='coerce')
-municipis_habitants_2020['Total 65+'] = pd.to_numeric(municipis_habitants_2020['Total 65+'], errors='coerce')
+municipis_habitants_2020.loc[:, 'Total 0-14'] = pd.to_numeric(municipis_habitants_2020['Total 0-14'], errors='coerce')
+municipis_habitants_2020.loc[:, 'Total 15-64'] = pd.to_numeric(municipis_habitants_2020['Total 15-64'], errors='coerce')
+municipis_habitants_2020.loc[:, 'Total 65+'] = pd.to_numeric(municipis_habitants_2020['Total 65+'], errors='coerce')
 
 # Create the 'total' column by summing the specified fields
 municipis_habitants_2020.loc[:, 'Total'] = (
-    municipis_habitants_2020['Total 0-14'] +
-    municipis_habitants_2020['Total 15-64'] +
-    municipis_habitants_2020['Total 65+']
+    municipis_habitants_2020['Total 0-14'].fillna(0) +  # Handle NaN values
+    municipis_habitants_2020['Total 15-64'].fillna(0) +
+    municipis_habitants_2020['Total 65+'].fillna(0)
 )
+
+# Here normalize NOMMUNI from municipis and Municipi from municipis_habitants_2020
+def normalize_region_name(name):
+    name = name.lower()
+
+    name = name.strip()
+    
+    # Remove punctuation except for apostrophes in certain cases
+    name = re.sub(r"[,.]", "", name)  # Remove commas and periods
+    # Handle apostrophes correctly
+    name = re.sub(r"\bl'", "l ", name)  # Change "l'" to "l" with a space for sorting
+
+    # Sort words (if necessary) and remove extra spaces
+    words = name.split()
+    words.sort()  # Sort alphabetically
+    normalized_name = ' '.join(words)
+    
+    return normalized_name
+
+
+# Normalize names in both DataFrames
+municipis_habitants_2020.loc[:, 'Normalized'] = municipis_habitants_2020['Municipi'].apply(normalize_region_name)
+municipis.loc[:, 'Normalized'] = municipis['NOMMUNI'].apply(normalize_region_name)
 
 comarques['Total'] = 0
 
 # Iterate through municipis_habitants_2020 to update comarques
 for index, row in municipis_habitants_2020.iterrows():
-    municipi = row['Municipi']              # Get municipi
+    municipi = row['Normalized']              # Get municipi
     total_habitants_municipi = row['Total'] # Get total
 
     # Find the row in municipis with NOMMUNI = municipi
-    municipi_row = municipis[municipis['NOMMUNI'] == municipi]
+    municipi_row = municipis[municipis['Normalized'] == municipi]
     
     if not municipi_row.empty:
         comarca = municipi_row['NOMCOMAR'].values[0]  # Get the value of NOMCOMAR
@@ -45,6 +69,8 @@ for index, row in municipis_habitants_2020.iterrows():
         if not comarca_row.empty:
             # Update the 'Total' field in comarques
             comarques.loc[comarques['NOMCOMAR'] == comarca, 'Total'] += total_habitants_municipi
+        else:
+            print("comarca not found: %s", comarca)
 
 
 # Print the updated comarques DataFrame
