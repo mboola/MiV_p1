@@ -46,8 +46,14 @@ for index, row in municipis_habitants_2020.iterrows():
             # Update the 'Total' field in comarques
             comarques.loc[comarques['NOMCOMAR'] == comarca, 'Total'] += total_habitants_municipi
 
+
 # Print the updated comarques DataFrame
-print(comarques)
+# Print all comarques where Total is equal to 0
+#comarques_with_zero_total = comarques[comarques['Total'] == 0]
+
+# Check if any comarques were found
+#if not comarques_with_zero_total.empty:
+#    print(comarques_with_zero_total)
 
 
 
@@ -60,32 +66,52 @@ geojson_data = gdf.__geo_interface__
 # Create a Plotly figure
 fig = go.Figure()
 
-# Add the GeoJSON data to the figure
+# Customize hover text to include both region name and total population
+comarques['hover_text'] = comarques.apply(
+    lambda row: f"Region: {row['NOMCOMAR']}<br>Total: {row['Total']:,}", axis=1
+)
+
+# Add the GeoJSON data to the figure with a color bar (legend)
 fig.add_trace(go.Choroplethmapbox(
     geojson=geojson_data,
-    locations=gdf.index,
-    z=gdf['Total'], #[1]*len(gdf),
-    colorscale="Viridis",  # You can choose other color scales
+    locations=comarques.index,
+    z=comarques['Total'],  # Population data
+    colorscale="Viridis",  # You can choose other color scales (e.g., 'Blues', 'Greens')
     marker_line_width=1,  # Width of the borders
     marker_line_color='black',  # Color of the borders
-    text=gdf['NOMCOMAR'],  # Tooltip text
+    text=comarques['hover_text'],  # Tooltip text
     hoverinfo='text',
+    colorbar=dict(
+        title="Population",       # Title of the legend
+        titleside="right",        # Title position
+        tickvals=[500000, 1000000, 1500000, 2000000, 2500000],  # Custom ticks (adjust according to your data)
+        ticktext=["500k", "1M", "1.5M", "2M", "2.5M"],  # Custom labels
+        len=0.7,                 # Length of the color bar (percentage of the figure height)
+    )
 ))
 
-# Set the layout
+# Set the layout, including a title
 fig.update_layout(
     mapbox_style="white-bg",  # Set to a white background
-    mapbox_zoom=7,  # Decrease zoom level (originally was 8)
-    mapbox_center={"lat": 41.6940, "lon": 2.0290},  # Center of Barcelona
+    mapbox_zoom=7,  # Zoom level
+    mapbox_center={"lat": 41.6940, "lon": 2.0290},  # Center the map
     margin={"r": 10, "t": 10, "l": 10, "b": 10},  # Remove margins
-    shapes=[  # Adding a black rectangle
+    title={
+        'text': "Population Distribution by Region",  # Add your title here
+        'y': 0.95,  # Position of the title (closer to the top)
+        'x': 0.5,   # Center align the title
+        'xanchor': 'center',
+        'yanchor': 'top',
+    },
+    title_font=dict(size=20),  # Customize title font size
+    # Add the black rectangle shape around the map
+    shapes=[
         dict(
             type="rect",
-            xref="paper", yref="paper",
-            x0=1, y0=1,
-            x1=1, y1=1,
-            opacity=0,
-            line=dict(color="black", width=1),
+            xref="paper", yref="paper",  # Coordinate system for positioning
+            x0=0, y0=0,  # Bottom left corner of the rectangle
+            x1=1, y1=1,  # Top right corner of the rectangle
+            line=dict(color="black", width=4),  # Black border with width 4
         )
     ]
 )
