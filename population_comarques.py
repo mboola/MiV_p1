@@ -15,13 +15,13 @@ municipis_habitants = pd.read_csv("habitants_municipis.csv")
 
 municipis_habitants_2020 = municipis_habitants[municipis_habitants['Any'] == 2020].copy()
 
-municipis_habitants_2020['Total 0-4'] = pd.to_numeric(municipis_habitants_2020['Total 0-4'], errors='coerce')
+municipis_habitants_2020['Total 0-14'] = pd.to_numeric(municipis_habitants_2020['Total 0-14'], errors='coerce')
 municipis_habitants_2020['Total 15-64'] = pd.to_numeric(municipis_habitants_2020['Total 15-64'], errors='coerce')
 municipis_habitants_2020['Total 65+'] = pd.to_numeric(municipis_habitants_2020['Total 65+'], errors='coerce')
 
 # Create the 'total' column by summing the specified fields
 municipis_habitants_2020.loc[:, 'Total'] = (
-    municipis_habitants_2020['Total 0-4'] +
+    municipis_habitants_2020['Total 0-14'] +
     municipis_habitants_2020['Total 15-64'] +
     municipis_habitants_2020['Total 65+']
 )
