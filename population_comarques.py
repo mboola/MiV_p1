@@ -4,30 +4,26 @@ from shapely import wkt
 import re
 import plotly.graph_objects as go
 
-# Load the CSV file
 comarques = pd.read_csv("comarques_catalunya.csv")
 municipis = pd.read_csv("municipis_catalunya.csv")
+habitants_municipis = pd.read_csv("habitants_municipis.csv")
+
+habitants_municipis = habitants_municipis[habitants_municipis['Any'] == 2020]
+
+habitants_municipis.loc[:, 'Total 0-14'] = pd.to_numeric(habitants_municipis['Total 0-14'], errors='coerce')
+habitants_municipis.loc[:, 'Total 15-64'] = pd.to_numeric(habitants_municipis['Total 15-64'], errors='coerce')
+habitants_municipis.loc[:, 'Total 65+'] = pd.to_numeric(habitants_municipis['Total 65+'], errors='coerce')
+
+# Create the 'total' column by summing the specified fields
+habitants_municipis.loc[:, 'Total'] = (
+    habitants_municipis['Total 0-14'].fillna(0) +  # Handle NaN values
+    habitants_municipis['Total 15-64'].fillna(0) +
+    habitants_municipis['Total 65+'].fillna(0)
+)
 
 # Convert the 'Georeferència' column (which is WKT) to actual geometries
 comarques['geometry'] = comarques['Georeferència'].apply(wkt.loads)
 
-# Read the additional CSV file that contains 'municipi' and 'total'
-municipis_habitants = pd.read_csv("habitants_municipis.csv")
-
-municipis_habitants_2020 = municipis_habitants[municipis_habitants['Any'] == 2020]
-
-municipis_habitants_2020.loc[:, 'Total 0-14'] = pd.to_numeric(municipis_habitants_2020['Total 0-14'], errors='coerce')
-municipis_habitants_2020.loc[:, 'Total 15-64'] = pd.to_numeric(municipis_habitants_2020['Total 15-64'], errors='coerce')
-municipis_habitants_2020.loc[:, 'Total 65+'] = pd.to_numeric(municipis_habitants_2020['Total 65+'], errors='coerce')
-
-# Create the 'total' column by summing the specified fields
-municipis_habitants_2020.loc[:, 'Total'] = (
-    municipis_habitants_2020['Total 0-14'].fillna(0) +  # Handle NaN values
-    municipis_habitants_2020['Total 15-64'].fillna(0) +
-    municipis_habitants_2020['Total 65+'].fillna(0)
-)
-
-# Here normalize NOMMUNI from municipis and Municipi from municipis_habitants_2020
 def normalize_region_name(name):
     name = name.lower()
 
@@ -47,13 +43,13 @@ def normalize_region_name(name):
 
 
 # Normalize names in both DataFrames
-municipis_habitants_2020.loc[:, 'Normalized'] = municipis_habitants_2020['Municipi'].apply(normalize_region_name)
+habitants_municipis.loc[:, 'Normalized'] = habitants_municipis['Municipi'].apply(normalize_region_name)
 municipis.loc[:, 'Normalized'] = municipis['NOMMUNI'].apply(normalize_region_name)
 
 comarques['Total'] = 0
 
-# Iterate through municipis_habitants_2020 to update comarques
-for index, row in municipis_habitants_2020.iterrows():
+# Iterate through habitants_municipis_2020 to update comarques
+for index, row in habitants_municipis.iterrows():
     municipi = row['Normalized']              # Get municipi
     total_habitants_municipi = row['Total'] # Get total
 
@@ -94,7 +90,7 @@ fig = go.Figure()
 
 # Customize hover text to include both region name and total population
 comarques['hover_text'] = comarques.apply(
-    lambda row: f"Region: {row['NOMCOMAR']}<br>Total: {row['Total']:,}", axis=1
+    lambda row: f"Comarca: {row['NOMCOMAR']}<br>Població total: {row['Total']:,}", axis=1
 )
 
 # Add the GeoJSON data to the figure with a color bar (legend)
