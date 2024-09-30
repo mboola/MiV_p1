@@ -3,9 +3,11 @@ import geopandas as gpd
 from shapely import wkt
 import re
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 comarques = pd.read_csv("comarques_catalunya.csv")
 municipis = pd.read_csv("municipis_catalunya.csv")
+
 habitants_municipis = pd.read_csv("habitants_municipis.csv")
 
 habitants_municipis = habitants_municipis[habitants_municipis['Any'] == 2020]
@@ -14,15 +16,11 @@ habitants_municipis.loc[:, 'Total 0-14'] = pd.to_numeric(habitants_municipis['To
 habitants_municipis.loc[:, 'Total 15-64'] = pd.to_numeric(habitants_municipis['Total 15-64'], errors='coerce')
 habitants_municipis.loc[:, 'Total 65+'] = pd.to_numeric(habitants_municipis['Total 65+'], errors='coerce')
 
-# Create the 'total' column by summing the specified fields
 habitants_municipis.loc[:, 'Total'] = (
     habitants_municipis['Total 0-14'].fillna(0) +  # Handle NaN values
     habitants_municipis['Total 15-64'].fillna(0) +
     habitants_municipis['Total 65+'].fillna(0)
 )
-
-# Convert the 'Georeferència' column (which is WKT) to actual geometries
-comarques['geometry'] = comarques['Georeferència'].apply(wkt.loads)
 
 def normalize_region_name(name):
     name = name.lower()
@@ -46,12 +44,26 @@ def normalize_region_name(name):
 habitants_municipis.loc[:, 'Normalized'] = habitants_municipis['Municipi'].apply(normalize_region_name)
 municipis.loc[:, 'Normalized'] = municipis['NOMMUNI'].apply(normalize_region_name)
 
+poblacio_0_14_homes = 0
+poblacio_0_14_dones = 0
+poblacio_15_64_homes = 0
+poblacio_15_64_dones = 0
+poblacio_65_homes = 0
+poblacio_65_dones = 0
+
 comarques['Total'] = 0
 
-# Iterate through habitants_municipis_2020 to update comarques
+# Iterate through habitants_municipis to update comarques
 for index, row in habitants_municipis.iterrows():
     municipi = row['Normalized']              # Get municipi
     total_habitants_municipi = row['Total'] # Get total
+
+    poblacio_0_14_dones += row['D 0-14']
+    poblacio_0_14_homes += row['H 0-14']
+    poblacio_15_64_dones += row['D 15-64']
+    poblacio_15_64_homes += row['H 15-64']
+    poblacio_65_dones += row['D 65+']
+    poblacio_65_homes += row['H 65+']
 
     # Find the row in municipis with NOMMUNI = municipi
     municipi_row = municipis[municipis['Normalized'] == municipi]
@@ -65,19 +77,10 @@ for index, row in habitants_municipis.iterrows():
         if not comarca_row.empty:
             # Update the 'Total' field in comarques
             comarques.loc[comarques['NOMCOMAR'] == comarca, 'Total'] += total_habitants_municipi
-        else:
-            print("comarca not found: %s", comarca)
 
 
-# Print the updated comarques DataFrame
-# Print all comarques where Total is equal to 0
-#comarques_with_zero_total = comarques[comarques['Total'] == 0]
-
-# Check if any comarques were found
-#if not comarques_with_zero_total.empty:
-#    print(comarques_with_zero_total)
-
-
+# Convert the 'Georeferència' column (which is WKT) to actual geometries
+comarques['geometry'] = comarques['Georeferència'].apply(wkt.loads)
 
 # Convert merged DataFrame to GeoDataFrame
 gdf = gpd.GeoDataFrame(comarques, geometry='geometry')
@@ -140,3 +143,40 @@ fig.update_layout(
 
 # Show the figure
 fig.show()
+
+
+# Example data
+sexe = ['Dones', 'Homes']
+
+edat_rang_0_14 = [poblacio_0_14_dones, poblacio_0_14_homes]
+edat_rang_15_64 = [poblacio_15_64_dones, poblacio_15_64_homes]
+edat_rang_65 = [poblacio_65_dones, poblacio_65_homes]
+
+# Create two subplots for two pie charts
+pie_chart = make_subplots(rows=1, cols=3, specs=[[{'type':'domain'}, {'type':'domain'}, {'type':'domain'}]])
+
+pie_chart.add_trace(go.Pie(labels=sexe, values=edat_rang_0_14, textfont=dict(size=20)),
+              row=1, col=1)
+
+pie_chart.add_trace(go.Pie(labels=sexe, values=edat_rang_15_64, textfont=dict(size=20)),
+              row=1, col=2)
+
+pie_chart.add_trace(go.Pie(labels=sexe, values=edat_rang_65, textfont=dict(size=20)),
+              row=1, col=3)
+
+# Update layout
+pie_chart.update_layout(
+    title={
+        'text': "Comparació d'edat i sexe 2020",
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top',
+        'font': dict(size=24)
+    },
+    annotations=[dict(text='0-14 anys', x=0.1, y=0.9, font_size=20, showarrow=False),
+                 dict(text='15-64 anys', x=0.5, y=0.9, font_size=20, showarrow=False),
+                 dict(text='65+ anys', x=0.92, y=0.9, font_size=20, showarrow=False)]
+)
+
+pie_chart.show()
+
