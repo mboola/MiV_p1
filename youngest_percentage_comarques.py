@@ -109,7 +109,7 @@ fig.update_layout(
     mapbox_center={"lat": 41.6940, "lon": 2.0290},  # Center the map
     margin={"r": 10, "t": 10, "l": 10, "b": 10},  # Remove margins
     title={
-        'text': "Percentage of young people",  # Add your title here
+        'text': "Percentatge de gent jove per comarca",  # Add your title here
         'y': 0.95,  # Position of the title (closer to the top)
         'x': 0.5,   # Center align the title
         'xanchor': 'center',
