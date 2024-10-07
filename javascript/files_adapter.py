@@ -6,10 +6,6 @@ import re
 comarques_df = pd.read_csv('base_files/comarques.csv', usecols=['geo', 'NOMCOMAR'])
 municipis_df = pd.read_csv('base_files/municipis.csv', usecols=['geo', 'NOMMUNI', 'NOMCOMAR'])
 
-# Create a list of Municipis for each comarca
-municipis_grouped = municipis_df.groupby('NOMCOMAR')['NOMMUNI'].apply(list).reset_index()
-comarques_df = pd.merge(comarques_df, municipis_grouped, on='NOMCOMAR', how='left')
-
 poblacio_municipis_df = pd.read_csv('base_files/habitants_municipis.csv', usecols=['Municipi', 'Total 0-14', 'Total 15-64', 'Total 65+', 'Any'])
 
 def normalize_region_name(name):
@@ -29,13 +25,12 @@ def normalize_region_name(name):
     
     return normalized_name
 
-def adapt_names(df):
-    print
-
 poblacio_municipis_df.loc[:, 'Municipi'] = poblacio_municipis_df['Municipi'].apply(normalize_region_name)
 municipis_df.loc[:, 'NOMMUNI'] = municipis_df['NOMMUNI'].apply(normalize_region_name)
 
-adapt_names(poblacio_municipis_df)
+# Create a list of Municipis for each comarca
+municipis_grouped = municipis_df.groupby('NOMCOMAR')['NOMMUNI'].apply(list).reset_index()
+comarques_df = pd.merge(comarques_df, municipis_grouped, on='NOMCOMAR', how='left')
 
 # TODO : use all, not only year 2020
 poblacio_municipis_df = poblacio_municipis_df[poblacio_municipis_df['Any'] == 2020]
