@@ -9,22 +9,12 @@
 		body {
 			font-family: Arial, sans-serif;
 		}
-		svg {
-			width: 100%;
-			height: 600px; /* Set map height */
-		}
 		.region {
 			stroke: white;
 			stroke-width: 1;
 		}
 		.region:hover {
 			fill: orange;
-		}
-		#map-container {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			margin-top: 10px;
 		}
 		#back-button {
             position: absolute;
@@ -50,6 +40,10 @@
 			display: flex;
 			justify-content: center;
 			align-items: center;
+		}
+		svg {
+			width: 100%;
+			height: 100%;
 		}
 		#gradient-scale {
 			width: 20px;
@@ -90,7 +84,7 @@
 		height = +svg.attr("height");
 
 	const g = svg.append("g");
-	const projection = d3.geoMercator().center([4.355, 39.872]);
+	const projection = d3.geoMercator();
 	const path = d3.geoPath().projection(projection);
 
 	const zoom = d3.zoom()
@@ -103,25 +97,34 @@
 	const colorScale = d3.scaleLinear()
 		.domain([0, 100000, 2500000]) // Define the domain (min, midpoint, max) adjust as needed
 		.range(["#ffcccc", "#ff6666", "#ff0000"]); // Corresponding colors
-	
+
+	var currentGeoData = null;
+
 	// Adjust the map's dimensions and keep it centered on window resize
 	function resizeMap() {
-		const rectWidth = Math.min(window.innerWidth, window.innerHeight);
-		const rectHeight = rectWidth;
+		if (currentGeoData == null)
+			return ;
+
+		const rect = d3.select("#rectangle").node().getBoundingClientRect(); // Get the size of the #rectangle div
+		const rectWidth = rect.width;
+		const rectHeight = rect.height;
+
+		const margin = 20;
 
 		// Update projection to keep it centered
-		projection
-			.scale(rectWidth * 13)
-			.translate([rectWidth, rectHeight]);
+		projection.fitSize([rectWidth - margin * 2, rectHeight - margin * 2], currentGeoData);
 
-		// Update the size of the svg container
-		svg.attr("width", rectWidth).attr("height", rectHeight);
+		// Animate the transition for resizing
+		g.transition().duration(750) // 750ms animation duration
+        	.attr("transform", `translate(${margin}, ${margin})`);
 
-		// Recalculate and redraw paths
-		g.selectAll("path").attr("d", path);
+		// Recalculate and smoothly redraw paths
+		g.selectAll("path")
+			.transition()
+			.duration(750) // Add smooth transition for path resizing
+			.attr("d", path);
 	}
 
-	resizeMap();
 	window.addEventListener('resize', resizeMap);
 
 	const backButton = d3.select("#back-button");
@@ -171,6 +174,9 @@
 
 			//TODO : initial animation to show comarques
 			g.selectAll(".comarca").style("visibility", "visible");
+			
+			currentGeoData = comarquesData;
+			resizeMap();
         }
 
 		// Zoom into a selected comarca and display municipalities
@@ -189,22 +195,18 @@
 				})
 				.style("visibility", "visible");
 
-			const [[x0, y0], [x1, y1]] = path.bounds(comarca);
-            svg.transition().duration(750).call(
-                zoom.transform,
-                d3.zoomIdentity
-					.translate((x1 + x0) / 2, (y1 + y0) / 2)
-					.scale(2)
-					.translate((x1 - x0) / 2, (y1 - y0) / 2)
-            );
+				g.selectAll(".comarca").style("visibility", "hidden");
 
-			//g.selectAll(".comarca").style("visibility", "hidden");
-			backButton.style("display", "block");
+				currentGeoData = comarca
+				resizeMap();
+
+				backButton.style("display", "block");
         }
 
         // Event listener to return to comarques view
         backButton.on("click", function() {
-            svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity); // Reset zoom
+			currentGeoData = comarquesData
+			resizeMap();
 			g.selectAll(".comarca").style("visibility", "visible");
             g.selectAll(".municipi").style("visibility", "hidden");
 			backButton.style("display", "none");
