@@ -6,9 +6,9 @@ const svg = d3.select("#map"),
 // (This should be done dynamically but it is to expensive, so for a better interactivity this is necessary)
 const gElementDict = {};
 
-function createNewGElement(componentName, name) {
+function createNewGElement(name) {
 	console.log("Creating new g element name: ", name);
-	const gElement = svg.append(componentName);
+	const gElement = svg.append("g").attr("id", name);
 	gElementDict[name] = gElement;
 }
 
@@ -33,20 +33,31 @@ function resizeMap() {
 
 	const gElement = gElementDict[currentGeoData.name];
 
-	const bbox = gElement.node().getBoundingClientRect();
-	console.log("Bounding Box:", bbox); // Outputs the bounding box of the group
+	const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
 
-	//const currentTransform = gElement.attr("transform");
-  	//console.log("Current Transform:", currentTransform); // Outputs: "translate(100, 150)"
+	const longitudesSpan = x1 - x0;
+    const latitudesSpan = y1 - y0;
+	
+    const scaleFactor = Math.min(
+        rect.width / longitudesSpan, 
+        rect.height / latitudesSpan
+    );
 
-	//console.log(gElement);
+	const longitudeCenter = (x0 + x1) / 2;
+	const latitudeCenter = (y0 + y1) / 2;
+	const centroid = [longitudeCenter, latitudeCenter];
+	projection
+		.center(centroid)
+		.scale(scaleFactor * 50);
 
-	//const longitudeCenter = (x0 + x1) / 2;
-	//const latitudeCenter = (y0 + y1) / 2;
-	//const centroid = [longitudeCenter, latitudeCenter];
-	//projection
-	//	.center(centroid)
-	//	.scale(scaleFactor * 50);
+	const bbox = gElement.node().getBBox();
+
+	// margin in px
+	const margin = 25;
+	
+	// Recalculate and smoothly redraw paths
+	gElement.selectAll("path").attr("d", path);
+	gElement.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
 	/*
 	// If it is the main map, we dont calculate the centroid again.
 	let scaleMult;
@@ -114,7 +125,7 @@ Promise.all([
 	// Only one call to this function
 	function createAllRenderData() {
 		// First we create a g element for the map of comarques
-		createNewGElement(comarquesData.name, comarquesData.name);
+		createNewGElement(comarquesData.name);
 		const comarques = gElementDict[comarquesData.name];
 
 		// Then we add the information from the GeoJson
@@ -139,7 +150,7 @@ Promise.all([
 		// Then for each comarca inside comarques we create another g element
 		comarquesData.features.forEach(element => {
 			const nomcomar = element.properties.NOMCOMAR;
-			createNewGElement("municipi", nomcomar);
+			createNewGElement(nomcomar);
 			const comarca = gElementDict[nomcomar];
 
 			const municipisToFind = element.properties.NOMMUNI;
