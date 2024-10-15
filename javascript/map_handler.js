@@ -2,11 +2,17 @@ const svg = d3.select("#map"),
 	width = +svg.attr("width"),
 	height = +svg.attr("height");
 
-const g = svg.append("g");
-const projection = d3.geoMercator()
-	.center([0, 0])
-	.scale(150)
-	.translate([svg.attr("width") / 2, svg.attr("height") / 2]);
+// Here I create a g for every map I will have.
+// (This should be done dynamically but it is to expensive, so for a better interactivity this is necessary)
+const gElementDict = {};
+
+function createNewGElement(componentName, name) {
+	console.log("Creating new g element name: ", name);
+	const gElement = svg.append(componentName);
+	gElementDict[name] = gElement;
+}
+
+const projection = d3.geoMercator();
 const path = d3.geoPath().projection(projection);
 
 // Set up the color scale for population
@@ -15,15 +21,33 @@ const colorScale = d3.scaleLinear()
 	.range(["#ffcccc", "#ff6666", "#ff0000"]); // Corresponding colors
 
 const rect = document.getElementById("map").getBoundingClientRect();
+
 var currentGeoData = null;
 var isComarques = false;
-var mainCoord = null;
 
 // Adjust the map's dimensions and keep it centered on window resize
 function resizeMap() {
+	
 	if (currentGeoData == null)
 		return ;
 
+	const gElement = gElementDict[currentGeoData.name];
+
+	const bbox = gElement.node().getBoundingClientRect();
+	console.log("Bounding Box:", bbox); // Outputs the bounding box of the group
+
+	//const currentTransform = gElement.attr("transform");
+  	//console.log("Current Transform:", currentTransform); // Outputs: "translate(100, 150)"
+
+	//console.log(gElement);
+
+	//const longitudeCenter = (x0 + x1) / 2;
+	//const latitudeCenter = (y0 + y1) / 2;
+	//const centroid = [longitudeCenter, latitudeCenter];
+	//projection
+	//	.center(centroid)
+	//	.scale(scaleFactor * 50);
+	/*
 	// If it is the main map, we dont calculate the centroid again.
 	let scaleMult;
 
@@ -77,6 +101,7 @@ function resizeMap() {
 	{
 		g.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
 	}
+	*/
 }
 
 const backButton = d3.select("#back-button");
@@ -85,18 +110,23 @@ Promise.all([
 	d3.json('geojson_files/comarques.geojson'),
 	d3.json('geojson_files/municipis.geojson')
 ]).then(([comarquesData, municipisData]) => {
+
 	// Only one call to this function
-	function renderAllData() {
-		backButton.style("display", "none");
-		g.selectAll(".comarca")
+	function createAllRenderData() {
+		// First we create a g element for the map of comarques
+		createNewGElement(comarquesData.name, comarquesData.name);
+		const comarques = gElementDict[comarquesData.name];
+
+		// Then we add the information from the GeoJson
+		comarques.selectAll(".comarca")
 			.data(comarquesData.features)
 			.enter().append("path")
 			.attr("class", "region comarca")
 			.attr("d", path)
 			.attr("fill", d => colorScale(d.properties.Total))
-			.on("click", function(event, d) {
-				renderMunicipis(d);
-			})
+			//.on("click", function(event, d) {
+			//	renderMunicipis(d);
+			//})
 			.on("mouseover", function(event, d) {
 				const tooltip = d3.select("body").append("div")
 					.attr("class", "tooltip")
@@ -106,29 +136,40 @@ Promise.all([
 			})
 			.on("mouseout", () => d3.selectAll(".tooltip").remove());
 
-		g.selectAll(".municipi")
-			.data(municipisData.features)
-			.enter().append("path")
-			.attr("class", "region municipi")
-			.attr("d", path)
-			.attr("fill", d => colorScale(d.properties.Total))  // Color by Total population
-			.on("mouseover", function(event, d) {
-				const tooltip = d3.select("body").append("div")
-					.attr("class", "tooltip")
-					.html(`Municipi: ${d.properties.NOMMUNI}<br>Total: ${d3.format(",")(d.properties.Total || 0)}`)
-					.style("left", (event.pageX + 5) + "px")
-					.style("top", (event.pageY - 28) + "px");
-			})
-			.on("mouseout", () => d3.selectAll(".tooltip").remove());
+		// Then for each comarca inside comarques we create another g element
+		comarquesData.features.forEach(element => {
+			const nomcomar = element.properties.NOMCOMAR;
+			createNewGElement("municipi", nomcomar);
+			const comarca = gElementDict[nomcomar];
 
-		g.selectAll(".comarca").style("visibility", "hidden");
-		g.selectAll(".municipi").style("visibility", "hidden");
+			const municipisToFind = element.properties.NOMMUNI;
+			const municipisInComarca = municipisData.features.filter(municipi => 
+				municipisToFind.includes(municipi.properties.NOMMUNI)
+			);
 
-		//TODO : initial animation to show comarques
-		g.selectAll(".comarca").style("visibility", "visible");
+			//console.log(municipisInComarca);
+			comarca.selectAll(".municipi")
+				.data(municipisInComarca)
+				.enter().append("path")
+				.attr("class", "region municipi")
+				.attr("d", path)
+				.attr("fill", d => colorScale(d.properties.Total))  // Color by Total population
+				.on("mouseover", function(event, d) {
+					const tooltip = d3.select("body").append("div")
+						.attr("class", "tooltip")
+						.html(`Municipi: ${d.properties.NOMMUNI}<br>Total: ${d3.format(",")(d.properties.Total || 0)}`)
+						.style("left", (event.pageX + 5) + "px")
+						.style("top", (event.pageY - 28) + "px");
+				})
+				.on("mouseout", () => d3.selectAll(".tooltip").remove());
+			
+			// Hide the municipis bc for the moment I wont be showing them.
+			comarca.selectAll(".municipi").style("visibility", "hidden");
+		});
 	}
 
 	// Zoom into a selected comarca and display municipalities
+	/*
 	function renderMunicipis(comarca) {
 
 		const municipisToFind = comarca.properties.NOMMUNI;
@@ -162,12 +203,16 @@ Promise.all([
 		g.selectAll(".municipi").style("visibility", "hidden");
 		backButton.style("display", "none");
 	});
+	*/
+
+	backButton.style("display", "none");
 
 	currentGeoData = comarquesData;
-	// Render the comarques initially
-	renderAllData();
+
+	createAllRenderData();
+
 	isComarques = true;
-	mainCoord = d3.geoBounds(currentGeoData);
+	//mainCoord = d3.geoBounds(currentGeoData);
 	resizeMap();
 
 }).catch(error => {
