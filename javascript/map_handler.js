@@ -14,9 +14,10 @@ const colorScale = d3.scaleLinear()
 	.domain([0, 100000, 2500000]) // Define the domain (min, midpoint, max) adjust as needed
 	.range(["#ffcccc", "#ff6666", "#ff0000"]); // Corresponding colors
 
+const rect = document.getElementById("map").getBoundingClientRect();
 var currentGeoData = null;
-var comarquesCentroid = null;
 var isComarques = false;
+var mainCoord = null;
 
 // Adjust the map's dimensions and keep it centered on window resize
 function resizeMap() {
@@ -24,40 +25,58 @@ function resizeMap() {
 		return ;
 
 	// If it is the main map, we dont calculate the centroid again.
-	let centroid;
-	if (isComarques)
-		centroid = comarquesCentroid;
-	else
-		centroid = d3.geoCentroid(currentGeoData);
+	let scaleMult;
 
-	const bounds = d3.geoBounds(currentGeoData);
-	const longitudesSpan = bounds[1][0] - bounds[0][0];
-    const latitudesSpan = bounds[1][1] - bounds[0][1];
-
-	// must use this, other ways change
-	const rect = document.getElementById("map").getBoundingClientRect();
+	var [[x0, y0], [x1, y1]] = mainCoord;
+	const longitudesSpan = x1 - x0;
+    const latitudesSpan = y1 - y0;
 	
     const scaleFactor = Math.min(
         rect.width / longitudesSpan, 
         rect.height / latitudesSpan
     );
-	console.log("ScaleFactor:", scaleFactor);
-	//const scale = 5000;
+
+	var coord;
+	if (isComarques == true)
+	{
+		coord = mainCoord;
+		scaleMult = 50;
+	}
+	else
+	{
+		coord = d3.geoBounds(currentGeoData);
+		scaleMult = 70;
+	}
+
+	[[x0, y0], [x1, y1]] = coord;
+
+	const longitudeCenter = (x0 + x1) / 2;
+	const latitudeCenter = (y0 + y1) / 2;
+	
+	const centroid = [longitudeCenter, latitudeCenter];
+	console.log("Centeroid:", centroid);
 
 	projection
 		.center(centroid)
-		.scale(scaleFactor * 50);
+		.scale(scaleFactor * scaleMult);
 	
 	// Recalculate and smoothly redraw paths
 	g.selectAll("path").attr("d", path);
 
 	const bbox = g.node().getBBox();
-	console.log("G BBox:", bbox);
+	console.log("Bbox", bbox);
 
 	// margin in px
-	const margin = 40;
+	const margin = 25;
 
-	g.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
+	if (isComarques == true)
+	{
+		g.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
+	}
+	else
+	{
+		g.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
+	}
 }
 
 const backButton = d3.select("#back-button");
@@ -144,15 +163,11 @@ Promise.all([
 		backButton.style("display", "none");
 	});
 
-	// Calculate only once the centroid of comarquesData
 	currentGeoData = comarquesData;
-	comarquesCentroid = d3.geoCentroid(currentGeoData);
-
 	// Render the comarques initially
 	renderAllData();
-
-	// Ajust map to size
 	isComarques = true;
+	mainCoord = d3.geoBounds(currentGeoData);
 	resizeMap();
 
 }).catch(error => {
