@@ -3,14 +3,11 @@ const svg = d3.select("#map"),
 	height = +svg.attr("height");
 
 const g = svg.append("g");
-const projection = d3.geoMercator();
+const projection = d3.geoMercator()
+	.center([0, 0])
+	.scale(150)
+	.translate([svg.attr("width") / 2, svg.attr("height") / 2]);
 const path = d3.geoPath().projection(projection);
-
-const zoom = d3.zoom()
-	.scaleExtent([1, 3]) // Set the minimum and maximum zoom scale
-	.on("zoom", (event) => {
-		g.attr("transform", event.transform);
-	});
 
 // Set up the color scale for population
 const colorScale = d3.scaleLinear()
@@ -18,33 +15,50 @@ const colorScale = d3.scaleLinear()
 	.range(["#ffcccc", "#ff6666", "#ff0000"]); // Corresponding colors
 
 var currentGeoData = null;
+var comarquesCentroid = null;
+var isComarques = false;
 
 // Adjust the map's dimensions and keep it centered on window resize
 function resizeMap() {
 	if (currentGeoData == null)
 		return ;
 
-	const rect = d3.select("#rectangle").node().getBoundingClientRect(); // Get the size of the #rectangle div
-	const rectWidth = rect.width;
-	const rectHeight = rect.height;
+	// If it is the main map, we dont calculate the centroid again.
+	let centroid;
+	if (isComarques)
+		centroid = comarquesCentroid;
+	else
+		centroid = d3.geoCentroid(currentGeoData);
 
-	const margin = 20;
+	const bounds = d3.geoBounds(currentGeoData);
+	const longitudesSpan = bounds[1][0] - bounds[0][0];
+    const latitudesSpan = bounds[1][1] - bounds[0][1];
 
-	// Update projection to keep it centered
-	projection.fitSize([rectWidth - margin * 2, rectHeight - margin * 2], currentGeoData);
+	// must use this, other ways change
+	const rect = document.getElementById("map").getBoundingClientRect();
+	
+    const scaleFactor = Math.min(
+        rect.width / longitudesSpan, 
+        rect.height / latitudesSpan
+    );
+	console.log("ScaleFactor:", scaleFactor);
+	//const scale = 5000;
 
-	// Animate the transition for resizing
-	g.transition().duration(750) // 750ms animation duration
-		.attr("transform", `translate(${margin}, ${margin})`);
-
+	projection
+		.center(centroid)
+		.scale(scaleFactor * 50);
+	
 	// Recalculate and smoothly redraw paths
-	g.selectAll("path")
-		.transition()
-		.duration(750) // Add smooth transition for path resizing
-		.attr("d", path);
-}
+	g.selectAll("path").attr("d", path);
 
-window.addEventListener('resize', resizeMap);
+	const bbox = g.node().getBBox();
+	console.log("G BBox:", bbox);
+
+	// margin in px
+	const margin = 40;
+
+	g.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
+}
 
 const backButton = d3.select("#back-button");
 
@@ -93,9 +107,6 @@ Promise.all([
 
 		//TODO : initial animation to show comarques
 		g.selectAll(".comarca").style("visibility", "visible");
-		
-		currentGeoData = comarquesData;
-		resizeMap();
 	}
 
 	// Zoom into a selected comarca and display municipalities
@@ -117,6 +128,7 @@ Promise.all([
 			g.selectAll(".comarca").style("visibility", "hidden");
 
 			currentGeoData = comarca
+			isComarques = false;
 			resizeMap();
 
 			backButton.style("display", "block");
@@ -125,14 +137,26 @@ Promise.all([
 	// Event listener to return to comarques view
 	backButton.on("click", function() {
 		currentGeoData = comarquesData
+		isComarques = true;
 		resizeMap();
 		g.selectAll(".comarca").style("visibility", "visible");
 		g.selectAll(".municipi").style("visibility", "hidden");
 		backButton.style("display", "none");
 	});
 
+	// Calculate only once the centroid of comarquesData
+	currentGeoData = comarquesData;
+	comarquesCentroid = d3.geoCentroid(currentGeoData);
+
 	// Render the comarques initially
 	renderAllData();
+
+	// Ajust map to size
+	isComarques = true;
+	resizeMap();
+
 }).catch(error => {
 	console.error('Error loading GeoJSON:', error);
 });
+
+window.addEventListener('resize', resizeMap);
