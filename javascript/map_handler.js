@@ -21,7 +21,7 @@ const colorScale = d3.scaleLinear()
 	.range(["#ffcccc", "#ff6666", "#ff0000"]); // Corresponding colors
 
 var currentGeoData = null;
-var isComarques = false;
+var isComarques = true;
 
 // Adjust the map's dimensions and keep it centered on window resize
 function resizeMap() {
@@ -29,28 +29,46 @@ function resizeMap() {
 	if (currentGeoData == null)
 		return ;
 
-	const gElement = gElementDict[currentGeoData.name];
+	var gElement;
+	if (isComarques)
+	{
+		gElement = gElementDict[currentGeoData.name];
+		console.log("Comarques: ", gElement);
+	}
+	else
+	{
+		gElement = gElementDict[currentGeoData.properties.NOMCOMAR];
+		gElement.selectAll("path").attr("d", path);
+		console.log("Municipis: ", gElement);
+	}
+
+	//gElement.selectAll("path").attr("d", path);
 
 	const rect = document.getElementById("map").getBoundingClientRect();
-
-	const bound = gElement.node().getBBox();
 	
+	const bound = gElement.node().getBBox();
+	console.log(bound);
+
     const scaleFactor = Math.min(
         rect.width / bound.width, 
         rect.height / bound.height
     );
 
-	const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
-
-	const longitudeCenter = (x0 + x1) / 2;
-	const latitudeCenter = (y0 + y1) / 2;
-	const centroid = [longitudeCenter, latitudeCenter];
+	var centroid;
+	if (isComarques)
+	{
+		const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
+		centroid = [(x0 + x1) / 2, (y0 + y1) / 2];
+	}
+	else
+		centroid = path.centroid(currentGeoData);
 
 	projection
 		.center(centroid)
 		.scale(scaleFactor * 140);
 
 	console.log(scaleFactor);
+	console.log(centroid);
 
 	// Recalculate and smoothly redraw paths
 	gElement.selectAll("path").attr("d", path);
@@ -124,7 +142,6 @@ Promise.all([
 	d3.json('geojson_files/comarques.geojson'),
 	d3.json('geojson_files/municipis.geojson')
 ]).then(([comarquesData, municipisData]) => {
-
 	// Only one call to this function
 	function createAllRenderData() {
 		// First we create a g element for the map of comarques
@@ -138,9 +155,9 @@ Promise.all([
 			.attr("class", "region comarca")
 			.attr("d", path)
 			.attr("fill", d => colorScale(d.properties.Total))
-			//.on("click", function(event, d) {
-			//	renderMunicipis(d);
-			//})
+			.on("click", function(event, d) {
+				renderComarca(d);
+			})
 			.on("mouseover", function(event, d) {
 				const tooltip = d3.select("body").append("div")
 					.attr("class", "tooltip")
@@ -161,7 +178,6 @@ Promise.all([
 				municipisToFind.includes(municipi.properties.NOMMUNI)
 			);
 
-			//console.log(municipisInComarca);
 			comarca.selectAll(".municipi")
 				.data(municipisInComarca)
 				.enter().append("path")
@@ -178,8 +194,31 @@ Promise.all([
 				.on("mouseout", () => d3.selectAll(".tooltip").remove());
 			
 			// Hide the municipis bc for the moment I wont be showing them.
-			comarca.selectAll(".municipi").style("visibility", "hidden");
+			//comarca.selectAll(".municipi").style("visibility", "hidden");
 		});
+	}
+
+	// Called when a comarca gets clicked
+	function renderComarca(comarca) {
+
+		const comarquesGElement = gElementDict[comarquesData.name];
+		
+		// Get the name of the comarca
+		const nomcomar = comarca.properties.NOMCOMAR;
+		const comarcaGElement = gElementDict[nomcomar];
+
+		// Set only one comarca to visible
+		comarcaGElement.selectAll(".municipi").style("visibility", "visible");
+
+		// Set comarques to invisible
+		comarquesGElement.selectAll(".comarca").style("visibility", "hidden");
+
+		currentGeoData = comarca;
+
+		isComarques = false;
+		resizeMap();
+
+		backButton.style("display", "block");
 	}
 
 	// Zoom into a selected comarca and display municipalities
@@ -221,11 +260,12 @@ Promise.all([
 
 	backButton.style("display", "none");
 
+	console.log(comarquesData);
 	currentGeoData = comarquesData;
-
+	console.log(currentGeoData);
+	
 	createAllRenderData();
 
-	isComarques = true;
 	//mainCoord = d3.geoBounds(currentGeoData);
 	resizeMap();
 
