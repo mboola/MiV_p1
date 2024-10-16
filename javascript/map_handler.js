@@ -7,7 +7,7 @@ const svg = d3.select("#map"),
 const gElementDict = {};
 
 function createNewGElement(name) {
-	console.log("Creating new g element name: ", name);
+	//console.log("Creating new g element name: ", name);
 	const gElement = svg.append("g").attr("id", name);
 	gElementDict[name] = gElement;
 }
@@ -20,8 +20,6 @@ const colorScale = d3.scaleLinear()
 	.domain([0, 100000, 2500000]) // Define the domain (min, midpoint, max) adjust as needed
 	.range(["#ffcccc", "#ff6666", "#ff0000"]); // Corresponding colors
 
-const rect = document.getElementById("map").getBoundingClientRect();
-
 var currentGeoData = null;
 var isComarques = false;
 
@@ -33,31 +31,36 @@ function resizeMap() {
 
 	const gElement = gElementDict[currentGeoData.name];
 
-	const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
+	const rect = document.getElementById("map").getBoundingClientRect();
 
-	const longitudesSpan = x1 - x0;
-    const latitudesSpan = y1 - y0;
+	const bound = gElement.node().getBBox();
 	
     const scaleFactor = Math.min(
-        rect.width / longitudesSpan, 
-        rect.height / latitudesSpan
+        rect.width / bound.width, 
+        rect.height / bound.height
     );
+
+	const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
 
 	const longitudeCenter = (x0 + x1) / 2;
 	const latitudeCenter = (y0 + y1) / 2;
 	const centroid = [longitudeCenter, latitudeCenter];
+
 	projection
 		.center(centroid)
-		.scale(scaleFactor * 50);
+		.scale(scaleFactor * 140);
+
+	console.log(scaleFactor);
+
+	// Recalculate and smoothly redraw paths
+	gElement.selectAll("path").attr("d", path);
 
 	const bbox = gElement.node().getBBox();
 
 	// margin in px
 	const margin = 25;
-	
-	// Recalculate and smoothly redraw paths
-	gElement.selectAll("path").attr("d", path);
 	gElement.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
+
 	/*
 	// If it is the main map, we dont calculate the centroid again.
 	let scaleMult;
