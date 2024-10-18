@@ -33,35 +33,27 @@ function resizeMap() {
 	if (isComarques)
 	{
 		gElement = gElementDict[currentGeoData.name];
-		console.log("Comarques: ", gElement);
 	}
 	else
 	{
 		gElement = gElementDict[currentGeoData.properties.NOMCOMAR];
-		gElement.selectAll("path").attr("d", path);
-		console.log("Municipis: ", gElement);
 	}
 
 	//gElement.selectAll("path").attr("d", path);
 
 	const rect = document.getElementById("map").getBoundingClientRect();
 	
+	// Correct in both cases
 	const bound = gElement.node().getBBox();
-	console.log(bound);
+	console.log("Bounds g element:", gElement, bound);
 
     const scaleFactor = Math.min(
         rect.width / bound.width, 
         rect.height / bound.height
     );
 
-	var centroid;
-	if (isComarques)
-	{
-		const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
-		centroid = [(x0 + x1) / 2, (y0 + y1) / 2];
-	}
-	else
-		centroid = path.centroid(currentGeoData);
+	const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
+	const centroid = [(x0 + x1) / 2, (y0 + y1) / 2];
 
 	projection
 		.center(centroid)
@@ -148,6 +140,8 @@ Promise.all([
 		createNewGElement(comarquesData.name);
 		const comarques = gElementDict[comarquesData.name];
 
+		console.log("Comarques data: ", comarquesData);
+
 		// Then we add the information from the GeoJson
 		comarques.selectAll(".comarca")
 			.data(comarquesData.features)
@@ -201,6 +195,8 @@ Promise.all([
 	// Called when a comarca gets clicked
 	function renderComarca(comarca) {
 
+		console.log("Comarca to render is:", comarca);
+
 		const comarquesGElement = gElementDict[comarquesData.name];
 		
 		// Get the name of the comarca
@@ -245,28 +241,26 @@ Promise.all([
 			resizeMap();
 
 			backButton.style("display", "block");
-	}
+	}*/
 
 	// Event listener to return to comarques view
 	backButton.on("click", function() {
+		var gElement = gElementDict[currentGeoData.properties.NOMCOMAR];
+		gElement.selectAll(".municipi").style("visibility", "hidden");
 		currentGeoData = comarquesData
 		isComarques = true;
 		resizeMap();
-		g.selectAll(".comarca").style("visibility", "visible");
-		g.selectAll(".municipi").style("visibility", "hidden");
+		gElement = gElementDict[currentGeoData.name];
+		gElement.selectAll(".comarca").style("visibility", "visible");
 		backButton.style("display", "none");
 	});
-	*/
 
 	backButton.style("display", "none");
 
-	console.log(comarquesData);
 	currentGeoData = comarquesData;
-	console.log(currentGeoData);
 	
 	createAllRenderData();
 
-	//mainCoord = d3.geoBounds(currentGeoData);
 	resizeMap();
 
 }).catch(error => {
