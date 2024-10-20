@@ -76,6 +76,8 @@ Promise.all([
 				renderComarca(d);
 			})
 			.on("mouseover", function(event, d) {
+				d3.select(this) // Select the current path
+      				.style("cursor", "pointer"); // Change cursor to pointer
 				const tooltip = d3.select("body").append("div")
 					.attr("class", "tooltip")
 					.html(`Comarca: ${d.properties.NOMCOMAR}<br>Total: ${d3.format(",")(d.properties.Total || 0)}`)

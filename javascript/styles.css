@@ -1,5 +1,101 @@
 body {
 	font-family: Arial, sans-serif;
+	margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+#web-container {
+	max-width: 1200px;
+	margin: 0 auto;
+    padding: 20px;
+	background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+h1 {
+	text-align: center;
+	color: #333;
+}
+h2 {
+	text-align: center;
+	color: #333;
+}
+#data-container {
+	display: flex;
+    flex-direction: row;
+    align-items: top;
+}
+#interactive-menu {
+	background-color: #e0e0e0; /* Placeholder background color */
+	display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#year-selector {
+    margin-bottom: 20px;
+}
+
+.slider-container {
+	width: 15vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+input[type="range"] {
+    -webkit-appearance: slider-vertical; /* Chrome, Safari, Opera */
+    writing-mode: bt-lr; /* Firefox */
+    appearance: none;
+    width: 10px; /* Thickness of the slider track */
+    height: 200px; /* Height of the vertical slider */
+    background: #ddd;
+    border-radius: 5px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-value {
+    margin-top: 10px;
+    font-size: 16px;
+    color: #333;
+}
+
+#back-button {
+    padding: 10px 15px;
+    background-color: lightgrey;
+    color: white;
+    border: 1px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+	display: none;
+}
+#back-button:hover {
+    background-color: #f0f0f0;
+}
+#map-container {
+	width: min(80vw, 80vh);
+	height: min(80vw, 80vh);
+	border: 2px solid black;
+	margin: 0px 20px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 .region {
 	stroke: white;
@@ -7,49 +103,22 @@ body {
 .region:hover {
 	fill: orange;
 }
-#back-button {
-	position: absolute;
-	top: 10px;
-	left: 10px;
-	padding: 10px;
-	background-color: lightgrey;
-	border: 1px solid black;
-	cursor: pointer;
-	display: none;
-}
-#data-container {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	height: min(80vw, 80vh);
-}
-#rectangle {
-	width: min(80vw, 80vh);
-	height: min(80vw, 80vh);
-	border: 2px solid black;
-	margin: auto;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
 svg {
 	width: 100%;
 	height: 100%;
+}
+#gradient-container {
+	padding: 0px 20px;
+    width: min(5vw, 5vh);
 }
 #gradient-scale {
 	width: 20px;
 	height: 100%;
 	background: linear-gradient(to top, #ffcccc, #ff9999, #ff6666, #ff3333, #ff0000);
-	border: 1px solid black;
-	margin-left: 20px;
 }
 .tooltip {
 	position: absolute;
 	background: lightgrey;
 	padding: 5px;
 	border: 1px solid black;
-}
-h1 {
-	text-align: center;
-	margin-bottom: 30px;
 }
