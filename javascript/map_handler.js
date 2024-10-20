@@ -35,35 +35,22 @@ function resizeMap() {
 		gElement = gElementDict[currentGeoData.properties.NOMCOMAR];
 
 	const rect = document.getElementById("map").getBoundingClientRect();
-
 	const bound = gElement.node().getBBox();
-	console.log("Bounds g element:", bound);
 
     const scaleFactor = Math.min(
         rect.width / bound.width, 
         rect.height / bound.height
     );
 
-	const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
-	const centroid = [(x0 + x1) / 2, (y0 + y1) / 2];
-
-	console.log(scaleFactor);
-	//projection
-	//	.center(centroid)
-	//	.scale(scaleFactor * 10);
-
-	const bbox = gElement.node().getBBox();
-	console.log("Bounds g element:", bbox);
+	console.log("Bounds g element:", bound);
 
 	// margin in px
-	const margin = 25;
-	gElement.attr("transform", `scale(${scaleFactor}, ${scaleFactor}) translate(${-bbox.x}, ${-bbox.y})`);
+	const marginX = -(bound.width * scaleFactor - rect.width) / 2;
+	const marginY = -(bound.height * scaleFactor - rect.height) / 2;
+	gElement.attr("transform", `translate(${marginX}, ${marginY}) scale(${scaleFactor}, ${scaleFactor}) translate(${-bound.x}, ${-bound.y})`);
 
 	// Recalculate and smoothly redraw paths
-	gElement.selectAll("path").attr("d", path).attr("stroke-width", 0.01); // 0.1
-
-	const test = gElement.node().getBBox();
-	console.log("test g element:", test);
+	gElement.selectAll("path").attr("d", path).attr("stroke-width", 1 / scaleFactor);
 }
 
 const backButton = d3.select("#back-button");
