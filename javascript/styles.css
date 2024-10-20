@@ -3,7 +3,6 @@ body {
 }
 .region {
 	stroke: white;
-	stroke-width: 1;
 }
 .region:hover {
 	fill: orange;

@@ -25,27 +25,19 @@ var isComarques = true;
 
 // Adjust the map's dimensions and keep it centered on window resize
 function resizeMap() {
-	
 	if (currentGeoData == null)
 		return ;
 
 	var gElement;
 	if (isComarques)
-	{
 		gElement = gElementDict[currentGeoData.name];
-	}
 	else
-	{
 		gElement = gElementDict[currentGeoData.properties.NOMCOMAR];
-	}
-
-	//gElement.selectAll("path").attr("d", path);
 
 	const rect = document.getElementById("map").getBoundingClientRect();
-	
-	// Correct in both cases
+
 	const bound = gElement.node().getBBox();
-	console.log("Bounds g element:", gElement, bound);
+	console.log("Bounds g element:", bound);
 
     const scaleFactor = Math.min(
         rect.width / bound.width, 
@@ -55,77 +47,23 @@ function resizeMap() {
 	const [[x0, y0], [x1, y1]] = d3.geoBounds(currentGeoData);
 	const centroid = [(x0 + x1) / 2, (y0 + y1) / 2];
 
-	projection
-		.center(centroid)
-		.scale(scaleFactor * 140);
-
 	console.log(scaleFactor);
-	console.log(centroid);
-
-	// Recalculate and smoothly redraw paths
-	gElement.selectAll("path").attr("d", path);
+	//projection
+	//	.center(centroid)
+	//	.scale(scaleFactor * 10);
 
 	const bbox = gElement.node().getBBox();
+	console.log("Bounds g element:", bbox);
 
 	// margin in px
 	const margin = 25;
-	gElement.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
+	gElement.attr("transform", `scale(${scaleFactor}, ${scaleFactor}) translate(${-bbox.x}, ${-bbox.y})`);
 
-	/*
-	// If it is the main map, we dont calculate the centroid again.
-	let scaleMult;
-
-	var [[x0, y0], [x1, y1]] = mainCoord;
-	const longitudesSpan = x1 - x0;
-    const latitudesSpan = y1 - y0;
-	
-    const scaleFactor = Math.min(
-        rect.width / longitudesSpan, 
-        rect.height / latitudesSpan
-    );
-
-	var coord;
-	if (isComarques == true)
-	{
-		coord = mainCoord;
-		scaleMult = 50;
-	}
-	else
-	{
-		coord = d3.geoBounds(currentGeoData);
-		scaleMult = 70;
-	}
-
-	[[x0, y0], [x1, y1]] = coord;
-
-	const longitudeCenter = (x0 + x1) / 2;
-	const latitudeCenter = (y0 + y1) / 2;
-	
-	const centroid = [longitudeCenter, latitudeCenter];
-	console.log("Centeroid:", centroid);
-
-	projection
-		.center(centroid)
-		.scale(scaleFactor * scaleMult);
-	
 	// Recalculate and smoothly redraw paths
-	g.selectAll("path").attr("d", path);
+	gElement.selectAll("path").attr("d", path).attr("stroke-width", 0.01); // 0.1
 
-	const bbox = g.node().getBBox();
-	console.log("Bbox", bbox);
-
-	// margin in px
-	const margin = 25;
-
-	if (isComarques == true)
-	{
-		g.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
-	}
-	else
-	{
-		g.attr("transform", `translate(${-bbox.x + margin}, ${-bbox.y + margin})`);
-	}
-	*/
+	const test = gElement.node().getBBox();
+	console.log("test g element:", test);
 }
 
 const backButton = d3.select("#back-button");
@@ -139,8 +77,6 @@ Promise.all([
 		// First we create a g element for the map of comarques
 		createNewGElement(comarquesData.name);
 		const comarques = gElementDict[comarquesData.name];
-
-		console.log("Comarques data: ", comarquesData);
 
 		// Then we add the information from the GeoJson
 		comarques.selectAll(".comarca")
@@ -188,15 +124,12 @@ Promise.all([
 				.on("mouseout", () => d3.selectAll(".tooltip").remove());
 			
 			// Hide the municipis bc for the moment I wont be showing them.
-			//comarca.selectAll(".municipi").style("visibility", "hidden");
+			comarca.selectAll(".municipi").style("visibility", "hidden");
 		});
 	}
 
 	// Called when a comarca gets clicked
 	function renderComarca(comarca) {
-
-		console.log("Comarca to render is:", comarca);
-
 		const comarquesGElement = gElementDict[comarquesData.name];
 		
 		// Get the name of the comarca
@@ -217,31 +150,6 @@ Promise.all([
 		backButton.style("display", "block");
 	}
 
-	// Zoom into a selected comarca and display municipalities
-	/*
-	function renderMunicipis(comarca) {
-
-		const municipisToFind = comarca.properties.NOMMUNI;
-
-		// Find entries in municipisData geojson
-		const municipisInComarca = municipisData.features.filter(municipi => 
-			municipisToFind.includes(municipi.properties.NOMMUNI)
-		);
-
-		g.selectAll(".municipi")
-			.filter(function(d) {
-				return municipisInComarca.some(mun => mun.properties.NOMMUNI === d.properties.NOMMUNI);
-			})
-			.style("visibility", "visible");
-
-			g.selectAll(".comarca").style("visibility", "hidden");
-
-			currentGeoData = comarca
-			isComarques = false;
-			resizeMap();
-
-			backButton.style("display", "block");
-	}*/
 
 	// Event listener to return to comarques view
 	backButton.on("click", function() {
@@ -250,6 +158,7 @@ Promise.all([
 		currentGeoData = comarquesData
 		isComarques = true;
 		resizeMap();
+		//resizeMap();
 		gElement = gElementDict[currentGeoData.name];
 		gElement.selectAll(".comarca").style("visibility", "visible");
 		backButton.style("display", "none");
@@ -267,4 +176,7 @@ Promise.all([
 	console.error('Error loading GeoJSON:', error);
 });
 
-window.addEventListener('resize', resizeMap);
+window.addEventListener('resize', () => {
+	resizeMap();
+	//resizeMap();
+});
