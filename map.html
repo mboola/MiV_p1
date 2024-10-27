@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Poblacio comarques catalunya</title>
+	<script src="https://d3js.org/d3.v7.min.js" defer></script>
+	<script src="map_handler.js" defer></script>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+	<div id="web-container">
+		<h1>Poblation</h1>
+		<div id="data-container">
+			<div id="interactive-menu">
+				<div id="year-selector">
+					<h2>Year</h2>
+					<div class="slider-container">
+						<input type="range" id="number-slider" min="0" max="100" value="50"/>
+						<div class="slider-value">
+							<span id="slider-value">50</span>
+						</div>
+					</div>
+				</div>
+				<button id="back-button">Back</button>
+			</div>
+			<div id="map-container">
+				<svg id="map"></svg>
+			</div>
+			<div id="gradient-container">
+				<div id="gradient-scale"></div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

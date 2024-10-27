@@ -1,0 +1,118 @@
+body {
+	font-family: Arial, sans-serif;
+	margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+#web-container {
+	max-width: 1000px;
+	margin: 0 auto;
+    padding: 20px;
+	background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+h1 {
+	text-align: center;
+	color: #333;
+}
+h2 {
+	text-align: center;
+	color: #333;
+}
+#data-container {
+	display: flex;
+    flex-direction: row;
+    align-items: top;
+}
+#interactive-menu {
+	display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#year-selector {
+    background-color: #f1f1f1; /* Placeholder background color */
+    margin-bottom: 20px;
+    border-radius: 10px;
+    border: 1px solid black;
+}
+
+.slider-container {
+	width: 15vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+input[type="range"] {
+    writing-mode: bt-lr; /* Firefox */
+    appearance: none;
+    width: 100px; /* Thickness of the slider track */
+    height: 20px; /* Height of the vertical slider */
+    background: #f1f1f1;
+    border-radius: 5px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #000000;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-value {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+}
+
+#back-button {
+    padding: 10px 15px;
+    background-color: #f0f0f0;
+    color: black;
+    border: 1px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+	display: none;
+    width: 15vh;
+}
+#back-button:hover {
+    background-color: #d1d1d1;
+}
+#map-container {
+	width: min(80vw, 80vh);
+	height: min(80vw, 80vh);
+	border: 2px solid black;
+	margin: 0px 20px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+.region {
+	stroke: white;
+}
+.region:hover {
+	fill: orange;
+}
+svg {
+	width: 100%;
+	height: 100%;
+}
+#gradient-container {
+    display: flex;
+	padding: 0px 20px;
+}
+#gradient-scale {
+	width: 20px;
+	height: 100%;
+	background: linear-gradient(to top, #ffcccc, #ff9999, #ff6666, #ff3333, #ff0000);
+}
+.tooltip {
+	position: absolute;
+	background: lightgrey;
+	padding: 5px;
+	border: 1px solid black;
+}
