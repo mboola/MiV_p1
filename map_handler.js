@@ -16,9 +16,7 @@ function createNewGElement(name) {
 const slider = document.getElementById('number-slider');
 const sliderValueDisplay = document.getElementById('slider-value');
 
-function updateSlider(value) {
-	console.log(value);
-}
+const gradientBar = document.getElementById('gradient-container');
 
 const projection = d3.geoMercator();
 const path = d3.geoPath().projection(projection);
@@ -145,8 +143,29 @@ Promise.all([
 					.html(`Comarca: ${d.properties.NOMCOMAR}<br>Poblacio: ${d3.format(",")(population)}`)
 					.style("left", (event.pageX + 5) + "px")
 					.style("top", (event.pageY - 28) + "px");
+				
+				const gradientRect = gradientBar.getBoundingClientRect();
+
+				let i = 0;
+				while (i < colorScale.domain().length)
+				{
+					if (population < colorScale.domain()[i])
+						break;
+					i++;
+				}
+
+				const normalizedPosition = ( 1 - (i / (colorScale.domain().length)));
+				const positionOnGradient = gradientRect.height * normalizedPosition;
+				const gradientTooltip = d3.select("#gradient-container").append("div")
+					.attr("class", "gradient-tooltip")
+					.html(`Poblacio: ${d3.format(",")(population)}`)
+					.style("left", (gradientRect.left + (gradientRect.right - gradientRect.left) / 2) + "px")
+					.style("top", (gradientRect.top + positionOnGradient) + "px");
 			})
-			.on("mouseout", () => d3.selectAll(".tooltip").remove());
+			.on("mouseout", () => {
+				d3.selectAll(".tooltip").remove();
+				d3.selectAll(".gradient-tooltip").remove();
+			});
 
 		// Then for each comarca inside comarques we create another g element
 		comarquesData.features.forEach(element => {
@@ -172,8 +191,29 @@ Promise.all([
 						.html(`Municipi: ${d.properties.NOMMUNI}<br>Poblacio: ${d3.format(",")(population)}`)
 						.style("left", (event.pageX + 5) + "px")
 						.style("top", (event.pageY - 28) + "px");
-				})
-				.on("mouseout", () => d3.selectAll(".tooltip").remove());
+				
+						const gradientRect = gradientBar.getBoundingClientRect();
+		
+						let i = 0;
+						while (i < colorScale.domain().length)
+						{
+							if (population < colorScale.domain()[i])
+								break;
+							i++;
+						}
+		
+						const normalizedPosition = ( 1 - (i / (colorScale.domain().length)));
+						const positionOnGradient = gradientRect.height * normalizedPosition;
+						const gradientTooltip = d3.select("#gradient-container").append("div")
+							.attr("class", "gradient-tooltip")
+							.html(`Poblacio: ${d3.format(",")(population)}`)
+							.style("left", (gradientRect.left + (gradientRect.right - gradientRect.left) / 2) + "px")
+							.style("top", (gradientRect.top + positionOnGradient) + "px");
+					})
+					.on("mouseout", () => {
+						d3.selectAll(".tooltip").remove();
+						d3.selectAll(".gradient-tooltip").remove();
+					});
 			
 			// Hide the municipis bc for the moment I wont be showing them.
 			comarca.selectAll(".municipi").style("visibility", "hidden");

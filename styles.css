@@ -127,10 +127,10 @@ svg {
 }
 #gradient-container {
     display: flex;
-	padding: 0px 20px;
+	padding: 0px 20px 0 30px;
 }
 #gradient-scale {
-	width: 20px;
+	width: 30px;
 	height: 100%;
 }
 .tooltip {
@@ -138,4 +138,13 @@ svg {
 	background: lightgrey;
 	padding: 5px;
 	border: 1px solid black;
+}
+.gradient-tooltip {
+    position: absolute;
+    background-color: #ffffff;
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    font-size: 12px;
+    pointer-events: none; /* Prevent tooltip from interfering with mouse events */
 }
