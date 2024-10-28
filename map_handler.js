@@ -25,18 +25,25 @@ const path = d3.geoPath().projection(projection);
 
 // Set up the color scale for population
 const colorScale = d3.scaleLinear()
-    .domain([0, 500000, 1000000, 1500000, 2500000])
-    .range(["#440154", "#3b528b", "#21918c", "#5ec962", "#fde725"]);
+    .domain([0, 1000, 5000, 10000, 20000, 50000, 100000, 200000, 300000, 500000, 1000000, 2000000])
+    .range(["#440154", "#481567", "#453781", "#3e4a89", "#31688e", "#26828e", "#1f9e89", "#35b779", "#6ece58", "#b5de2b", "#fde725", "#fee825"]);
 
 // Get the gradient element
 const gradient = document.getElementById('gradient-scale');
 
 // Set the background to a linear gradient
 gradient.style.background = `linear-gradient(to top, 
-    ${colorScale(0)}, 
-    ${colorScale(500000)}, 
-    ${colorScale(1000000)}, 
-    ${colorScale(1500000)}, 
+    ${colorScale(0)},
+	${colorScale(1000)},
+	${colorScale(5000)},
+	${colorScale(10000)},
+	${colorScale(20000)},
+	${colorScale(50000)},
+	${colorScale(100000)},
+	${colorScale(200000)},
+	${colorScale(300000)},
+    ${colorScale(500000)},
+    ${colorScale(1000000)},
     ${colorScale(2500000)})`;
 
 var currentGeoData = null;
