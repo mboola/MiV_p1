@@ -17,7 +17,7 @@ poblacio_municipis_total_df = (
     poblacio_municipis_df.groupby(['mun', 'year'])['f_pop']
     .sum()
     .reset_index()
-    .rename(columns={'f_pop': 'Total'})  # Rename 'f_pop' to 'total' for clarity
+    .rename(columns={'f_pop': 'Total'})
 )
 
 totals_by_mun = (
@@ -30,18 +30,12 @@ totals_by_mun = (
 municipis_df = municipis_df.merge(totals_by_mun, left_on='CODIMUNI', right_on='mun', how='left')
 municipis_df = municipis_df.drop(columns=['mun'])
 
-#print("Columns in municipis_df:", municipis_df.columns)
-#print(municipis_df)
-
 comarques_df['Total'] = [{} for _ in range(len(comarques_df))]
 
 for _, row in municipis_df.iterrows():
     municipi = row['CODIMUNI']
     comarca = row['NOMCOMAR']
     total = row['Total']
-    
-    #print(municipi)
-    #print(total)
 
     comarca_row = comarques_df[comarques_df['NOMCOMAR'] == comarca]
 
@@ -54,8 +48,8 @@ for _, row in municipis_df.iterrows():
         # Update the Total for each year from the municipality total
         for year, population in total.items():
             if year not in comarques_df.at[comarca_index, 'Total']:
-                comarques_df.at[comarca_index, 'Total'][year] = 0  # Initialize if not present
-            comarques_df.at[comarca_index, 'Total'][year] += population  # Add the population
+                comarques_df.at[comarca_index, 'Total'][year] = 0
+            comarques_df.at[comarca_index, 'Total'][year] += population
     else:
         print("Comarca not found: " + comarca + " inside comarques_df")
 

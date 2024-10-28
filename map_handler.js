@@ -140,7 +140,7 @@ Promise.all([
 				const population = d.properties.Total[yearToShow] || 0;
 				const tooltip = d3.select("body").append("div")
 					.attr("class", "tooltip")
-					.html(`Comarca: ${d.properties.NOMCOMAR}<br>Poblacio: ${d3.format(",")(population)}`)
+					.html(`Comarca: ${d.properties.NOMCOMAR}<br>Població: ${d3.format(",")(population)}`)
 					.style("left", (event.pageX + 5) + "px")
 					.style("top", (event.pageY - 28) + "px");
 				
@@ -158,7 +158,7 @@ Promise.all([
 				const positionOnGradient = gradientRect.height * normalizedPosition;
 				const gradientTooltip = d3.select("#gradient-container").append("div")
 					.attr("class", "gradient-tooltip")
-					.html(`Poblacio: ${d3.format(",")(population)}`)
+					.html(`Població: ${d3.format(",")(population)}`)
 					.style("left", (gradientRect.left + (gradientRect.right - gradientRect.left) / 2) + "px")
 					.style("top", (gradientRect.top + positionOnGradient) + "px");
 			})
@@ -188,7 +188,7 @@ Promise.all([
 					const population = d.properties.Total[yearToShow] || 0;
 					const tooltip = d3.select("body").append("div")
 						.attr("class", "tooltip")
-						.html(`Municipi: ${d.properties.NOMMUNI}<br>Poblacio: ${d3.format(",")(population)}`)
+						.html(`Municipi: ${d.properties.NOMMUNI}<br>Població: ${d3.format(",")(population)}`)
 						.style("left", (event.pageX + 5) + "px")
 						.style("top", (event.pageY - 28) + "px");
 				
@@ -206,7 +206,7 @@ Promise.all([
 						const positionOnGradient = gradientRect.height * normalizedPosition;
 						const gradientTooltip = d3.select("#gradient-container").append("div")
 							.attr("class", "gradient-tooltip")
-							.html(`Poblacio: ${d3.format(",")(population)}`)
+							.html(`Població: ${d3.format(",")(population)}`)
 							.style("left", (gradientRect.left + (gradientRect.right - gradientRect.left) / 2) + "px")
 							.style("top", (gradientRect.top + positionOnGradient) + "px");
 					})
