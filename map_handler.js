@@ -13,18 +13,11 @@ function createNewGElement(name) {
 }
 
 // Get the slider and slider value display elements
-const slider = d3.select("#number-slider");
-const sliderValueDisplay = d3.select("#slider-value");
-
-// Listen for input events on the slider
-slider.on("input", function() {
-    const sliderValue = +this.value;
-    sliderValueDisplay.text(sliderValue);
-    updateSlider(sliderValue);
-});
+const slider = document.getElementById('number-slider');
+const sliderValueDisplay = document.getElementById('slider-value');
 
 function updateSlider(value) {
-	
+	console.log(value);
 }
 
 const projection = d3.geoMercator();
@@ -32,8 +25,19 @@ const path = d3.geoPath().projection(projection);
 
 // Set up the color scale for population
 const colorScale = d3.scaleLinear()
-	.domain([0, 100000, 2500000]) // Define the domain (min, midpoint, max) adjust as needed
-	.range(["#ffcccc", "#ff6666", "#ff0000"]); // Corresponding colors
+    .domain([0, 500000, 1000000, 1500000, 2500000])
+    .range(["#d0f0c0", "#90ee90", "#32cd32", "#008080", "#004d00"]);
+
+// Get the gradient element
+const gradient = document.getElementById('gradient-scale');
+
+// Set the background to a linear gradient
+gradient.style.background = `linear-gradient(to top, 
+    ${colorScale(0)}, 
+    ${colorScale(500000)}, 
+    ${colorScale(1000000)}, 
+    ${colorScale(1500000)}, 
+    ${colorScale(2500000)})`;
 
 var currentGeoData = null;
 var isComarques = true;
@@ -57,8 +61,6 @@ function resizeMap() {
         rect.height / bound.height
     );
 
-	console.log("Bounds g element:", bound);
-
 	// margin in px
 	const marginX = -(bound.width * scaleFactor - rect.width) / 2;
 	const marginY = -(bound.height * scaleFactor - rect.height) / 2;
@@ -68,7 +70,7 @@ function resizeMap() {
 	gElement.selectAll("path").attr("d", path).attr("stroke-width", 1 / scaleFactor);
 }
 
-const yearToShow = 2000;
+var yearToShow = 2010;
 
 const backButton = d3.select("#back-button");
 
@@ -89,6 +91,27 @@ Promise.all([
             feature.properties.Total = JSON.parse(feature.properties.Total.replace(/([0-9]{4}):/g, '"$1":'));
         }
     });
+
+	const firstComarca = comarquesData.features[0];
+	let years = Object.keys(firstComarca.properties.Total).map(year => parseInt(year, 10));
+
+	const firstYear = years[0];
+    const lastYear = years[years.length - 1];
+
+	slider.min = firstYear;
+	slider.max = lastYear;
+	yearToShow = years[Math.floor(years.length / 2)];
+	slider.value = yearToShow;
+
+	sliderValueDisplay.textContent = yearToShow;
+
+	slider.addEventListener('input', function() {
+		sliderValueDisplay.textContent = this.value;
+		yearToShow = this.value;
+		// Update all colors
+		d3.selectAll(".region")
+			.attr("fill", d => colorScale(d.properties.Total[yearToShow]));
+	});
 
 	// Only one call to this function
 	function createAllRenderData() {
