@@ -4,60 +4,62 @@ from shapely.wkt import loads
 import re
 
 comarques_df = pd.read_csv('base_files/comarques.csv', usecols=['geo', 'NOMCOMAR'])
-municipis_df = pd.read_csv('base_files/municipis.csv', usecols=['geo', 'NOMMUNI', 'NOMCOMAR'])
-
-poblacio_municipis_df = pd.read_csv('base_files/habitants_municipis.csv', usecols=['Municipi', 'Total 0-14', 'Total 15-64', 'Total 65+', 'Any'])
-
-def normalize_region_name(name):
-    name = name.lower()
-
-    name = name.strip()
-    
-    # Remove punctuation except for apostrophes in certain cases
-    name = re.sub(r"[,.]", "", name)  # Remove commas and periods
-    # Handle apostrophes correctly
-    name = re.sub(r"\bl'", "l ", name)  # Change "l'" to "l" with a space for sorting
-
-    # Sort words (if necessary) and remove extra spaces
-    words = name.split()
-    words.sort()  # Sort alphabetically
-    normalized_name = ' '.join(words)
-    
-    return normalized_name
-
-poblacio_municipis_df.loc[:, 'Municipi'] = poblacio_municipis_df['Municipi'].apply(normalize_region_name)
-municipis_df.loc[:, 'NOMMUNI'] = municipis_df['NOMMUNI'].apply(normalize_region_name)
+municipis_df = pd.read_csv('base_files/municipis.csv', usecols=['geo', 'NOMMUNI', 'NOMCOMAR', 'CODIMUNI'])
 
 # Create a list of Municipis for each comarca
-municipis_grouped = municipis_df.groupby('NOMCOMAR')['NOMMUNI'].apply(list).reset_index()
+municipis_grouped = municipis_df.groupby('NOMCOMAR')['CODIMUNI'].apply(list).reset_index()
 comarques_df = pd.merge(comarques_df, municipis_grouped, on='NOMCOMAR', how='left')
 
-# TODO : use all, not only year 2020
-poblacio_municipis_df = poblacio_municipis_df[poblacio_municipis_df['Any'] == 2020]
+poblacio_municipis_df = pd.read_csv('base_files/sex_mun.csv', usecols=['mun', 'year', 'f_pop'])
 
-poblacio_municipis_df['Total'] = poblacio_municipis_df['Total 0-14'] + poblacio_municipis_df['Total 15-64'] + poblacio_municipis_df['Total 65+']
+# For each year and each mun in poblacio_municipis_df, add values and create a new df with fields mun, year and total.
+poblacio_municipis_total_df = (
+    poblacio_municipis_df.groupby(['mun', 'year'])['f_pop']
+    .sum()
+    .reset_index()
+    .rename(columns={'f_pop': 'Total'})  # Rename 'f_pop' to 'total' for clarity
+)
 
-# TODO : separate in years
-comarques_df['Total'] = 0
+totals_by_mun = (
+    poblacio_municipis_total_df.pivot(index='mun', columns='year', values='Total')
+    .apply(lambda row: row.dropna().to_dict(), axis=1)
+    .reset_index()
+    .rename(columns={0: 'Total'})
+)
 
-for _, row in poblacio_municipis_df.iterrows():
-    municipi = row['Municipi']
-    total_habitants_municipi = row['Total']
+municipis_df = municipis_df.merge(totals_by_mun, left_on='CODIMUNI', right_on='mun', how='left')
+municipis_df = municipis_df.drop(columns=['mun'])
+
+#print("Columns in municipis_df:", municipis_df.columns)
+#print(municipis_df)
+
+comarques_df['Total'] = [{} for _ in range(len(comarques_df))]
+
+for _, row in municipis_df.iterrows():
+    municipi = row['CODIMUNI']
+    comarca = row['NOMCOMAR']
+    total = row['Total']
     
-    municipi_row = municipis_df[municipis_df['NOMMUNI'] == municipi]
-    if not municipi_row.empty:
-        municipis_df.loc[municipis_df['NOMMUNI'] == municipi, 'Total'] = total_habitants_municipi
-        
-        comarca = municipi_row['NOMCOMAR'].values[0]
-        comarca_row = comarques_df[comarques_df['NOMCOMAR'] == comarca]
+    #print(municipi)
+    #print(total)
 
-        if not comarca_row.empty:
-            comarques_df.loc[comarques_df['NOMCOMAR'] == comarca, 'Total'] += total_habitants_municipi
-        else:
-            print("Comarca not found: " + comarca + " inside comarques_df")
+    comarca_row = comarques_df[comarques_df['NOMCOMAR'] == comarca]
+
+    if not comarca_row.empty:
+        comarca_index = comarca_row.index[0]
+
+        if not comarques_df.at[comarca_index, 'Total']:
+            comarques_df.at[comarca_index, 'Total'] = {}
+
+        # Update the Total for each year from the municipality total
+        for year, population in total.items():
+            if year not in comarques_df.at[comarca_index, 'Total']:
+                comarques_df.at[comarca_index, 'Total'][year] = 0  # Initialize if not present
+            comarques_df.at[comarca_index, 'Total'][year] += population  # Add the population
     else:
-        print("Municipi not found: " + municipi + " inside municipis_df")
+        print("Comarca not found: " + comarca + " inside comarques_df")
 
+#print(comarques_df)
 
 def convert_to_geojson(df, geojson_file):
     # Create a GeoDataFrame

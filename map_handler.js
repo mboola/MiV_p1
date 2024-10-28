@@ -12,6 +12,21 @@ function createNewGElement(name) {
 	gElementDict[name] = gElement;
 }
 
+// Get the slider and slider value display elements
+const slider = d3.select("#number-slider");
+const sliderValueDisplay = d3.select("#slider-value");
+
+// Listen for input events on the slider
+slider.on("input", function() {
+    const sliderValue = +this.value;
+    sliderValueDisplay.text(sliderValue);
+    updateSlider(sliderValue);
+});
+
+function updateSlider(value) {
+	
+}
+
 const projection = d3.geoMercator();
 const path = d3.geoPath().projection(projection);
 
@@ -53,12 +68,28 @@ function resizeMap() {
 	gElement.selectAll("path").attr("d", path).attr("stroke-width", 1 / scaleFactor);
 }
 
+const yearToShow = 2000;
+
 const backButton = d3.select("#back-button");
 
 Promise.all([
 	d3.json('geojson_files/comarques.geojson'),
 	d3.json('geojson_files/municipis.geojson')
 ]).then(([comarquesData, municipisData]) => {
+
+	 // Converts to valid JSON
+	comarquesData.features.forEach(feature => {
+        if (feature.properties.Total) {
+            feature.properties.Total = JSON.parse(feature.properties.Total.replace(/([0-9]{4}):/g, '"$1":'));
+        }
+    });
+
+	municipisData.features.forEach(feature => {
+        if (feature.properties.Total) {
+            feature.properties.Total = JSON.parse(feature.properties.Total.replace(/([0-9]{4}):/g, '"$1":'));
+        }
+    });
+
 	// Only one call to this function
 	function createAllRenderData() {
 		// First we create a g element for the map of comarques
@@ -71,16 +102,17 @@ Promise.all([
 			.enter().append("path")
 			.attr("class", "region comarca")
 			.attr("d", path)
-			.attr("fill", d => colorScale(d.properties.Total))
+			.attr("fill", d => colorScale(d.properties.Total[yearToShow]))
 			.on("click", function(event, d) {
 				renderComarca(d);
 			})
 			.on("mouseover", function(event, d) {
 				d3.select(this) // Select the current path
       				.style("cursor", "pointer"); // Change cursor to pointer
+				const population = d.properties.Total[yearToShow] || 0;
 				const tooltip = d3.select("body").append("div")
 					.attr("class", "tooltip")
-					.html(`Comarca: ${d.properties.NOMCOMAR}<br>Total: ${d3.format(",")(d.properties.Total || 0)}`)
+					.html(`Comarca: ${d.properties.NOMCOMAR}<br>Poblacio: ${d3.format(",")(population)}`)
 					.style("left", (event.pageX + 5) + "px")
 					.style("top", (event.pageY - 28) + "px");
 			})
@@ -92,9 +124,9 @@ Promise.all([
 			createNewGElement(nomcomar);
 			const comarca = gElementDict[nomcomar];
 
-			const municipisToFind = element.properties.NOMMUNI;
+			const municipisToFind = element.properties.CODIMUNI;
 			const municipisInComarca = municipisData.features.filter(municipi => 
-				municipisToFind.includes(municipi.properties.NOMMUNI)
+				municipisToFind.includes(municipi.properties.CODIMUNI)
 			);
 
 			comarca.selectAll(".municipi")
@@ -102,11 +134,12 @@ Promise.all([
 				.enter().append("path")
 				.attr("class", "region municipi")
 				.attr("d", path)
-				.attr("fill", d => colorScale(d.properties.Total))  // Color by Total population
+				.attr("fill", d => colorScale(d.properties.Total[yearToShow]))
 				.on("mouseover", function(event, d) {
+					const population = d.properties.Total[yearToShow] || 0;
 					const tooltip = d3.select("body").append("div")
 						.attr("class", "tooltip")
-						.html(`Municipi: ${d.properties.NOMMUNI}<br>Total: ${d3.format(",")(d.properties.Total || 0)}`)
+						.html(`Comarca: ${d.properties.NOMCOMAR}<br>Poblacio: ${d3.format(",")(population)}`)
 						.style("left", (event.pageX + 5) + "px")
 						.style("top", (event.pageY - 28) + "px");
 				})
