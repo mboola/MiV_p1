@@ -10,7 +10,7 @@ municipis_df = pd.read_csv('base_files/municipis.csv', usecols=['geo', 'NOMMUNI'
 municipis_grouped = municipis_df.groupby('NOMCOMAR')['CODIMUNI'].apply(list).reset_index()
 comarques_df = pd.merge(comarques_df, municipis_grouped, on='NOMCOMAR', how='left')
 
-poblacio_municipis_df = pd.read_csv('base_files/sex_mun.csv', usecols=['mun', 'year', 'f_pop'])
+poblacio_municipis_df = pd.read_csv('base_files/poblation_mun.csv', usecols=['mun', 'year', 'f_pop'])
 
 # For each year and each mun in poblacio_municipis_df, add values and create a new df with fields mun, year and total.
 poblacio_municipis_total_df = (

@@ -26,7 +26,7 @@ const path = d3.geoPath().projection(projection);
 // Set up the color scale for population
 const colorScale = d3.scaleLinear()
     .domain([0, 500000, 1000000, 1500000, 2500000])
-    .range(["#d0f0c0", "#90ee90", "#32cd32", "#008080", "#004d00"]);
+    .range(["#440154", "#3b528b", "#21918c", "#5ec962", "#fde725"]);
 
 // Get the gradient element
 const gradient = document.getElementById('gradient-scale');
@@ -162,7 +162,7 @@ Promise.all([
 					const population = d.properties.Total[yearToShow] || 0;
 					const tooltip = d3.select("body").append("div")
 						.attr("class", "tooltip")
-						.html(`Comarca: ${d.properties.NOMCOMAR}<br>Poblacio: ${d3.format(",")(population)}`)
+						.html(`Municipi: ${d.properties.NOMMUNI}<br>Poblacio: ${d3.format(",")(population)}`)
 						.style("left", (event.pageX + 5) + "px")
 						.style("top", (event.pageY - 28) + "px");
 				})
